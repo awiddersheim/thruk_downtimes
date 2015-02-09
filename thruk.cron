@@ -1,0 +1,3 @@
+THRUK_PASSWORD=changeme
+
+0 0 * * * root /usr/local/thruk/bin/downtime_pump.py -d /drbd/r1/thruk/downtimes/downtimes.json -u nagiosadmin >> /var/log/thruk/downtime_pump.log 2>&1
