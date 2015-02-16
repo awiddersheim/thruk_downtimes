@@ -2,7 +2,7 @@
 
 import logging
 import datetime
-import optparse
+import argparse
 import json
 import pprint
 import requests
@@ -10,19 +10,24 @@ from os import environ
 from time import sleep
 
 # add command line arguments
-parser = optparse.OptionParser()
-parser.add_option(
+parser = argparse.ArgumentParser(
+	prog="downtime_pump",
+	description="""
+		Pumps recurring downtimes into Monitoring
+		using the Thruk interface.
+	"""
+)
+
+parser.add_argument(
 	"-d",
 	"--downtime-file",
 	action="store",
 	dest="input_file",
 	default="downtimes.json",
-	type="string",
-	help="Location of JSON formatted downtime file. (Default: %default)"
+	help="Location of JSON formatted downtime file. (default: %(default)s)"
 )
 
-auth_group = optparse.OptionGroup(
-	parser,
+auth_group = parser.add_argument_group(
 	"Authentication",
 	(
 		"Password can be specified either on the command line or "
@@ -31,79 +36,73 @@ auth_group = optparse.OptionGroup(
 	)
 )
 
-auth_group.add_option(
+auth_group.add_argument(
 	"-u",
 	"--user",
 	action="store",
 	dest="username",
 	default=None,
-	type="string",
 	help="User to authenticate with."
 )
 
-auth_group.add_option(
+auth_group.add_argument(
 	"-p",
 	"--password",
 	action="store",
 	dest="password",
 	default=None,
-	type="string",
 	help="Password to authenticate with."
 )
 
-parser.add_option_group(auth_group)
-
-parser.add_option(
+parser.add_argument(
 	"-U",
 	"--url",
 	action="store",
 	dest="url",
 	default="https://127.0.0.1/thruk/cgi-bin/cmd.cgi",
-	type="string",
-	help="URL to Thruk's cmd.cgi page (Default: %default)"
+	help="URL to Thruk's cmd.cgi page (default: %(default)s)"
 )
 
-parser.add_option(
+parser.add_argument(
 	"-a",
 	"--author",
 	action="store",
 	dest="author",
 	default="Nagios",
-	type="string",
-	help="Author to use when adding downtimes. (Default: %default)"
+	help="Author to use when adding downtimes. (default: %(default)s)"
 )
 
-parser.add_option(
+parser.add_argument(
 	"-t",
 	"--timeout",
 	action="store",
 	dest="timeout",
 	default=10,
-	type="int",
-	help="Timeout in second(s) when connecting to Thruk. (Default: %default)"
+	type=int,
+	help="Timeout in second(s) when connecting to Thruk. (default: %(default)s)"
 )
 
-parser.add_option(
+parser.add_argument(
 	"-z",
 	"--sleep",
 	action="store",
 	dest="sleep",
 	default=1,
-	type="int",
-	help="How long to sleep in between retries when communicating with Thruk. (Default: %default)"
+	type=int,
+	help="How long to sleep in between retries when communicating with Thruk. (default: %(default)s)"
 )
 
-parser.add_option(
+parser.add_argument(
 	"-r",
 	"--retries",
 	action="store",
 	dest="retries",
 	default=10,
-	type="int",
-	help="Number of times to retry sending downtime data to Thruk. (Default: %default)"
+	type=int,
+	help="Number of times to retry sending downtime data to Thruk. (default: %(default)s)"
 )
 
-parser.add_option(
+parser.add_argument(
 	"-s",
 	"--simulation",
 	action="store_true",
@@ -112,15 +111,17 @@ parser.add_option(
 	help="Turn on simulation which only shows what would be done without actually doing it."
 )
 
-parser.add_option(
+parser.add_argument(
 	"-v",
 	"--verbose",
 	action="count",
 	default=0,
 	dest="verbose",
-	help="Increase verbosity. Can be specified up to 4 times. (default: %default)"
+	help="Increase verbosity. Can be specified up to 4 times. (default: %(default)s)"
 )
-(options, args) = parser.parse_args()
+
+# parse arguments
+options = parser.parse_args()
 
 # get a logger
 logger = logging.getLogger("logger")
@@ -235,10 +236,10 @@ for item in content:
 		and date_object.day == schedule["day"]:
 			# log info about downtime
 			logger.info(
-				"Processing downtime tgt: %s hst: %s svc: %s hg: %s sg: %s be: %s fxd: %s dur: %d flxrng: %d typ: %s wd: %s d: %d hr: %d min: %d",
+				"Processing downtime tgt: %s, hst: %s, svc: %s, hg: %s, sg: %s, be: %s, fxd: %s, dur: %d, flxrng: %d, typ: %s, wd: %s, d: %d, hr: %d, min: %d",
 				item["target"],
 				item["host"],
-				item["service"],
+				item["service"] or None,
 				item["hostgroup"],
 				item["servicegroup"],
 				item["backends"],
